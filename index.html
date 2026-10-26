@@ -271,6 +271,9 @@
       return canvas;
     }
 
+    /* Only allow one target's information card to be visible at a time. */
+    let activeCalloutRoot = null;
+
     /* Callout component */
     AFRAME.registerComponent('callout', {
       schema: {
@@ -549,6 +552,7 @@
         const build = () => {
           card = make('a-entity', {
             position: '0 1.12 0.1',
+            visible: root === activeCalloutRoot,
             billboard: '',
             animation__in:
               'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 600; easing: easeOutCubic; startEvents: pop',
@@ -566,6 +570,9 @@
               )
             })
           }, card);
+
+          root.__calloutCard = card;
+          card.setAttribute('visible', root === activeCalloutRoot);
         };
 
         if (document.fonts && document.fonts.load) {
@@ -578,8 +585,32 @@
         }
 
         root.addEventListener('targetFound', () => {
-          if (card) card.emit('pop');
+          activeCalloutRoot = root;
+
+          /* Hide every other card so pop-ups cannot stack. */
+          root.sceneEl.querySelectorAll('[callout]').forEach(otherRoot => {
+            if (otherRoot !== root && otherRoot.__calloutCard) {
+              otherRoot.__calloutCard.setAttribute('visible', false);
+            }
+          });
+
+          if (card) {
+            card.setAttribute('visible', true);
+            card.emit('pop');
+          }
         });
+
+        root.addEventListener('targetLost', () => {
+          if (activeCalloutRoot === root) {
+            activeCalloutRoot = null;
+          }
+          if (card) {
+            card.setAttribute('visible', false);
+          }
+        });
+
+        /* Keep a reference so this component can hide other cards. */
+        root.__calloutCard = null;
       }
     });
   </script>
