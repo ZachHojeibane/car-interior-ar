@@ -498,22 +498,23 @@
           });
         };
 
-        /* Small cyan arrows that rock back and forth to suggest flipping the cabin switches. */
-        const flipArrow = (x, y, delay = 0) => {
+        /* Two cyan direction arrows showing that the switches move up and down. */
+        const flipArrow = (x, y, rotation, delay = 0) => {
           const group = make('a-entity', {
             position: `${x} ${y} 0.09`,
-            animation__flip:
-              `property: rotation; from: 0 0 -24; to: 0 0 24; dir: alternate; dur: 620; delay: ${delay}; loop: true; easing: easeInOutSine`
+            rotation: `0 0 ${rotation}`,
+            animation__float:
+              `property: position; from: ${x} ${y} 0.09; to: ${x} ${y + (rotation === 0 ? 0.035 : -0.035)} 0.09; dir: alternate; dur: 800; delay: ${delay}; loop: true; easing: easeInOutSine`
           });
 
-          // Slim arrow shaft and two angled head strokes, all in the shared cyan-blue.
-          line(group, 0.014, 0.15, 0, 0.015, 0, WHITE, 0.95, 0.01);
-          line(group, 0.085, 0.014, -0.025, 0.075, 42, WHITE, 0.95, 0.01);
-          line(group, 0.085, 0.014, 0.025, 0.075, -42, WHITE, 0.95, 0.01);
+          const cyan = '#8DEBFA';
+          line(group, 0.014, 0.15, 0, 0.015, 0, cyan, 0.98, 0.01);
+          line(group, 0.085, 0.014, -0.025, 0.075, 42, cyan, 0.98, 0.01);
+          line(group, 0.085, 0.014, 0.025, 0.075, -42, cyan, 0.98, 0.01);
           make('a-circle', {
             radius: 0.022,
             position: '0 -0.075 0.012',
-            material: mat({ color: WHITE, opacity: 0.8 }),
+            material: mat({ color: cyan, opacity: 0.85 }),
             animation__pulse: PULSE
           }, group);
         };
@@ -749,12 +750,9 @@
 
           case 'bar':
             frame(0, 0, 1.0, 0.3, 'shimmer');
-            arrow(-0.95, 0, -90);
-            arrow(0.95, 0, 90);
-            // Three rocking cyan arrows animate the up/down flipping motion over the switches.
-            flipArrow(-0.34, 0.31, 0);
-            flipArrow(0, 0.31, 180);
-            flipArrow(0.34, 0.31, 360);
+            // Exactly two arrows point away from the switches: up above, down below.
+            flipArrow(0, 0.42, 0, 0);
+            flipArrow(0, -0.42, 180, 200);
             break;
 
           case 'pin':
