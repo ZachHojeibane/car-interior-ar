@@ -185,46 +185,72 @@
       ctx.strokeStyle = border;
       ctx.stroke();
 
-      /* Three-way split screen for the VR intro target */
+      /* Three-way split screen for the VR intro target only */
       if (isIntro) {
         const heading = (title || 'WELCOME TO CAR AR').toUpperCase();
-        ctx.font = '500 42px ' + FONT;
+        ctx.font = '500 50px ' + FONT; // 20% larger than the original 42px
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
-        ctx.fillText(heading, W / 2, 92);
+        ctx.fillText(heading, W / 2, 88);
 
         const panels = [
           { title: 'WELCOME', body: 'Welcome to the E-Coupe VR tour!' },
           { title: 'EXPLORE', body: 'Scan the icons around the cabin to explore the design.' },
           { title: 'ASK OUR AR SALESMAN', body: 'Ask any questions you may have to our AR salesman at any time!' }
         ];
-        const panelTop = 132;
-        const panelBottom = 500;
-        const gap = 18;
-        const panelWidth = (W - pad * 2 - gap * 2) / 3;
+        // Wider and taller panels, with a little more room between text and borders.
+        const panelTop = 118;
+        const panelBottom = 528;
+        const gap = 12;
+        const sidePad = 42;
+        const panelWidth = (W - sidePad * 2 - gap * 2) / 3;
+        const panelHeight = panelBottom - panelTop;
 
         panels.forEach((panel, i) => {
-          const x = pad + i * (panelWidth + gap);
-          roundRect(ctx, x, panelTop, panelWidth, panelBottom - panelTop, 24);
-          ctx.fillStyle = 'rgba(255,255,255,0.10)';
+          const x = sidePad + i * (panelWidth + gap);
+          roundRect(ctx, x, panelTop, panelWidth, panelHeight, 24);
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
           ctx.fill();
           ctx.lineWidth = 2;
-          ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+          ctx.strokeStyle = 'rgba(255,255,255,0.62)';
           ctx.stroke();
 
-          ctx.fillStyle = '#D6F36A';
-          ctx.font = '500 27px ' + FONT;
-          ctx.textAlign = 'center';
-          ctx.fillText(panel.title, x + panelWidth / 2, panelTop + 68);
+          const centerX = x + panelWidth / 2;
+          const innerWidth = panelWidth - 36;
 
-          ctx.fillStyle = 'rgba(255,255,255,0.94)';
-          ctx.font = '300 24px ' + FONT;
+          // Wrap headings too, so even the longest heading stays inside its panel.
+          let titleFont = 32.4; // 20% larger than the original 27px
+          if (panel.title.length > 12) titleFont = 27;
+          ctx.font = '500 ' + titleFont + 'px ' + FONT;
+          ctx.fillStyle = '#D6F36A';
+          ctx.textAlign = 'center';
+          const titleWords = panel.title.split(/\s+/);
+          const titleLines = [];
+          let titleLine = '';
+          titleWords.forEach(word => {
+            const test = titleLine ? titleLine + ' ' + word : word;
+            if (ctx.measureText(test).width > innerWidth && titleLine) {
+              titleLines.push(titleLine);
+              titleLine = word;
+            } else {
+              titleLine = test;
+            }
+          });
+          if (titleLine) titleLines.push(titleLine);
+          titleLines.forEach((line, lineIndex) => {
+            ctx.fillText(line, centerX, panelTop + 58 + lineIndex * 32);
+          });
+
+          // Larger body text, automatically wrapped and vertically fitted to the panel.
+          const bodyFont = 28.8; // 20% larger than the original 24px
+          ctx.font = '300 ' + bodyFont + 'px ' + FONT;
+          ctx.fillStyle = 'rgba(255,255,255,0.97)';
           const words = panel.body.split(/\s+/);
           const lines = [];
           let line = '';
           words.forEach(word => {
             const test = line ? line + ' ' + word : word;
-            if (ctx.measureText(test).width > panelWidth - 34 && line) {
+            if (ctx.measureText(test).width > innerWidth && line) {
               lines.push(line);
               line = word;
             } else {
@@ -232,10 +258,15 @@
             }
           });
           if (line) lines.push(line);
-          lines.forEach((textLine, lineIndex) => {
-            ctx.fillText(textLine, x + panelWidth / 2, panelTop + 125 + lineIndex * 36);
-          });
 
+          const bodyLineHeight = 35;
+          const titleBlockBottom = panelTop + 58 + (titleLines.length - 1) * 32;
+          const bodyStart = Math.max(panelTop + 132, titleBlockBottom + 48);
+          const availableHeight = panelBottom - 24 - bodyStart;
+          const lineHeight = Math.min(bodyLineHeight, availableHeight / Math.max(lines.length, 1));
+          lines.forEach((textLine, lineIndex) => {
+            ctx.fillText(textLine, centerX, bodyStart + lineIndex * lineHeight);
+          });
         });
 
         ctx.textAlign = 'left';
