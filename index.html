@@ -149,7 +149,7 @@
     }
 
     /* Create a consistent glassmorphic information card */
-    function drawCard(title, body) {
+    function drawCard(title, body, isIntro = false) {
       const W = 1024;
       const H = 576;
       const FONT = 'Montserrat, Helvetica, Arial, sans-serif';
@@ -184,6 +184,83 @@
       ctx.lineWidth = 3;
       ctx.strokeStyle = border;
       ctx.stroke();
+
+      /* Three-way split screen for the VR intro target */
+      if (isIntro) {
+        const heading = (title || 'WELCOME TO CAR AR').toUpperCase();
+        ctx.font = '500 42px ' + FONT;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.fillText(heading, W / 2, 92);
+
+        const panels = [
+          { title: 'WELCOME', body: 'Welcome to the E-Coupe VR tour!' },
+          { title: 'EXPLORE', body: 'Scan the icons around the cabin to explore the design.' },
+          { title: 'ASK OUR AR SALESMAN', body: 'Ask any questions you may have to our AR salesman at any time!' }
+        ];
+        const panelTop = 132;
+        const panelBottom = 500;
+        const gap = 18;
+        const panelWidth = (W - pad * 2 - gap * 2) / 3;
+
+        panels.forEach((panel, i) => {
+          const x = pad + i * (panelWidth + gap);
+          roundRect(ctx, x, panelTop, panelWidth, panelBottom - panelTop, 24);
+          ctx.fillStyle = 'rgba(255,255,255,0.10)';
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+          ctx.stroke();
+
+          ctx.fillStyle = '#D6F36A';
+          ctx.font = '500 27px ' + FONT;
+          ctx.textAlign = 'center';
+          ctx.fillText(panel.title, x + panelWidth / 2, panelTop + 68);
+
+          ctx.fillStyle = 'rgba(255,255,255,0.94)';
+          ctx.font = '300 24px ' + FONT;
+          const words = panel.body.split(/\s+/);
+          const lines = [];
+          let line = '';
+          words.forEach(word => {
+            const test = line ? line + ' ' + word : word;
+            if (ctx.measureText(test).width > panelWidth - 34 && line) {
+              lines.push(line);
+              line = word;
+            } else {
+              line = test;
+            }
+          });
+          if (line) lines.push(line);
+          lines.forEach((textLine, lineIndex) => {
+            ctx.fillText(textLine, x + panelWidth / 2, panelTop + 125 + lineIndex * 36);
+          });
+
+          if (i === 2) {
+            const buttonW = 170;
+            const buttonH = 46;
+            const buttonX = x + (panelWidth - buttonW) / 2;
+            const buttonY = panelBottom - 82;
+            roundRect(ctx, buttonX, buttonY, buttonW, buttonH, 18);
+            const buttonGlass = ctx.createLinearGradient(buttonX, buttonY, buttonX + buttonW, buttonY + buttonH);
+            buttonGlass.addColorStop(0, 'rgba(255,255,255,0.34)');
+            buttonGlass.addColorStop(1, 'rgba(255,255,255,0.10)');
+            ctx.fillStyle = buttonGlass;
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+            ctx.stroke();
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '500 19px ' + FONT;
+            ctx.textAlign = 'center';
+            ctx.fillText('ASK A QUESTION', buttonX + buttonW / 2, buttonY + 29);
+          }
+        });
+
+        ctx.textAlign = 'left';
+        return canvas;
+      }
 
       /* Centered title */
       const heading = (title || '').toUpperCase();
@@ -566,7 +643,9 @@
             material: mat({
               src: drawCard(
                 root.dataset.title || '',
-                root.dataset.body || ''
+                root.dataset.body || '',
+                root.getAttribute('callout')?.includes('intro') ||
+                  root.components?.callout?.data?.type === 'intro'
               )
             })
           }, card);
@@ -637,7 +716,7 @@
   mindar-image-target="targetIndex: 0"
   callout="type: ring"
   data-title="M Sport Steering Wheel"
-  data-body="This steering wheel comes directly from our Sport line. Our most racy offering.">
+  data-body="This steering wheel comes directly from the M Sport line. Our most racy offering.">
 </a-entity>
 
 <!-- 1: INSTRUMENT DIAL -->
@@ -653,7 +732,7 @@
   mindar-image-target="targetIndex: 2"
   callout="type: pin"
   data-title="The Gear Selector"
-  data-body="The gear shifter was milled from a single block of aluminum for maximum strength.">
+  data-body="Discover the design and craftsmanship of the gear shifter.">
 </a-entity>
 
 <!-- 3: CONTROL SWITCHES -->
@@ -661,7 +740,7 @@
   mindar-image-target="targetIndex: 3"
   callout="type: bar"
   data-title="Tactile Controls"
-  data-body="The cabin's analog-style toggle switches were chosen for their timeless design.">
+  data-body="Discover the details behind the cabin's analog-style toggle switches.">
 </a-entity>
 
 <!-- 4: VR INTRO -->
@@ -669,7 +748,7 @@
   mindar-image-target="targetIndex: 4"
   callout="type: intro"
   data-title="Welcome to Car AR"
-  data-body="Welcome to the E-Coupe VR tour! Scan the icons arround the cabin to explore the design, features, and stories that went behind its creation">
+  data-body="Scan the car icons to explore the car's design, features, and stories through augmented reality.">
 </a-entity>
 
   </a-scene>
