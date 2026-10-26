@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Car Interior AR Experience</title>
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    .instructions {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(20, 25, 25, 0.88);
+      color: white;
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="instructions">
+    <strong>Car Interior AR</strong><br>
+    Point your camera at one of the four car icons.
+  </div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: true;"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera
+      position="0 0 0"
+      look-controls="enabled: false">
+    </a-camera>
+
+    <!-- 1. Steering wheel -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity position="0.7 0 0.05">
+        <a-plane
+          width="1.5"
+          height="0.8"
+          material="color: #18211F; opacity: 0.94; shader: flat">
+        </a-plane>
+        <a-text
+          value="M SPORT STEERING WHEEL&#10;&#10;This steering wheel comes directly from the M Sport line. Our most racy offering."
+          color="#FFFFFF"
+          align="left"
+          anchor="center"
+          width="1.35"
+          wrap-count="27"
+          position="-0.65 0 0.01">
+        </a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- 2. Instrument dial -->
+    <a-entity mindar-image-target="targetIndex: 1">
+      <a-entity position="0.7 0 0.05">
+        <a-plane
+          width="1.5"
+          height="0.8"
+          material="color: #18211F; opacity: 0.94; shader: flat">
+        </a-plane>
+        <a-text
+          value="INSPIRED BY HISTORY&#10;&#10;These dials were inspired by a WW2 submarine."
+          color="#FFFFFF"
+          align="left"
+          anchor="center"
+          width="1.35"
+          wrap-count="27"
+          position="-0.65 0 0.01">
+        </a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- 3. Gear shifter -->
+    <a-entity mindar-image-target="targetIndex: 2">
+      <a-entity position="0.7 0 0.05">
+        <a-plane
+          width="1.5"
+          height="0.8"
+          material="color: #18211F; opacity: 0.94; shader: flat">
+        </a-plane>
+        <a-text
+          value="THE GEAR SELECTOR&#10;&#10;A closer look at the design and craftsmanship of the gear shifter."
+          color="#FFFFFF"
+          align="left"
+          anchor="center"
+          width="1.35"
+          wrap-count="27"
+          position="-0.65 0 0.01">
+        </a-text>
+      </a-entity>
+    </a-entity>
+
+    <!-- 4. Toggle switch console -->
+    <a-entity mindar-image-target="targetIndex: 3">
+      <a-entity position="0.7 0 0.05">
+        <a-plane
+          width="1.5"
+          height="0.8"
+          material="color: #18211F; opacity: 0.94; shader: flat">
+        </a-plane>
+        <a-text
+          value="TACTILE CONTROLS&#10;&#10;Discover the details behind the cabin's analog-style toggle switches."
+          color="#FFFFFF"
+          align="left"
+          anchor="center"
+          width="1.35"
+          wrap-count="27"
+          position="-0.65 0 0.01">
+        </a-text>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+</body>
+</html>
