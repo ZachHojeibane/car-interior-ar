@@ -18,12 +18,6 @@
   </style>
 
   <script>
-    /* callout: builds highlight + arrows + pointer + pop-up for one marker.
-       Usage: <a-entity mindar-image-target="targetIndex: 0"
-                        callout="type: ring"
-                        data-title="..." data-body="..."></a-entity>
-       type = ring | panel | bar | pin
-       (Marker is 1 unit wide, so sizes below are relative to the marker.) */
     AFRAME.registerComponent('callout', {
       schema: { type: { default: 'ring' }, color: { default: '#d6f36a' } },
 
@@ -36,8 +30,6 @@
           return e;
         };
         const flat = (op) => `shader: flat; color: ${C}; opacity: ${op}; transparent: true; side: double`;
-
-        /* ---------- building blocks ---------- */
 
         // Pulsing ring with an expanding ripple
         const ring = (x, y, r) => {
@@ -64,8 +56,7 @@
           }
         };
 
-        // Bobbing arrow. Tip points along local +y; rot rotates the whole arrow.
-        // rot 0 = points up, 180 = points down, -90 = points right, 90 = points left
+        // Bobbing arrow: rot 0 = up, 180 = down, -90 = right, 90 = left
         const arrow = (x, y, rot) => {
           const g = make('a-entity', { position: `${x} ${y} 0.05`, rotation: `0 0 ${rot}` });
           const b = make('a-entity', {
@@ -85,28 +76,14 @@
           make('a-sphere', { radius: 0.045, position: '0 0.31 0.09', material: 'shader: flat; color: #18211F' }, b);
         };
 
-        /* ---------- layouts per type ---------- */
         switch (this.data.type) {
-          case 'ring':                       // steering wheel
-            ring(0, 0, 0.38);
-            arrow(0, 0.85, 180);
-            break;
-          case 'panel':                      // instrument panel
-            frame(0, 0, 0.9, 0.45, true);
-            arrow(0, -0.75, 0);
-            break;
-          case 'bar':                        // dashboard
-            frame(0, 0, 1.0, 0.3, false);
-            arrow(-0.95, 0, -90);
-            arrow(0, -0.65, 0);
-            break;
-          case 'pin':                        // gear shifter
-            ring(0, -0.2, 0.22);
-            pin(0, 0.05);
-            break;
+          case 'ring':  ring(0, 0, 0.38); arrow(0, 0.85, 180); break;
+          case 'panel': frame(0, 0, 0.9, 0.45, true); arrow(0, -0.75, 0); break;
+          case 'bar':   frame(0, 0, 1.0, 0.3, false); arrow(-0.95, 0, -90); arrow(0, -0.65, 0); break;
+          case 'pin':   ring(0, -0.2, 0.22); pin(0, 0.05); break;
         }
 
-        /* ---------- pop-up card ---------- */
+        // Pop-up card
         const popup = make('a-entity', { position: '1.4 0 0.05', class: 'popup',
           animation__in: 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 450; easing: easeOutBack; startEvents: pop' });
         make('a-plane', { width: 1.5, height: 0.8,
