@@ -101,9 +101,9 @@
     const discTex = gradCanvas(
       256, 256,
       [
-        [0, 'rgba(255,255,255,.05)'],
-        [.7, 'rgba(255,255,255,.14)'],
-        [1, 'rgba(255,255,255,.42)']
+        [0, 'rgba(141,235,250,.05)'],
+        [.7, 'rgba(141,235,250,.14)'],
+        [1, 'rgba(141,235,250,.42)']
       ],
       false, true
     );
@@ -111,8 +111,8 @@
     const panelTex = gradCanvas(
       8, 256,
       [
-        [0, 'rgba(255,255,255,.30)'],
-        [1, 'rgba(255,255,255,.06)']
+        [0, 'rgba(141,235,250,.30)'],
+        [1, 'rgba(141,235,250,.06)']
       ],
       true, false
     );
@@ -120,9 +120,9 @@
     const scanTex = gradCanvas(
       8, 64,
       [
-        [0, 'rgba(255,255,255,0)'],
-        [.5, 'rgba(255,255,255,.9)'],
-        [1, 'rgba(255,255,255,0)']
+        [0, 'rgba(141,235,250,0)'],
+        [.5, 'rgba(141,235,250,.9)'],
+        [1, 'rgba(141,235,250,0)']
       ],
       true, false
     );
@@ -130,9 +130,9 @@
     const shimTex = gradCanvas(
       64, 8,
       [
-        [0, 'rgba(255,255,255,0)'],
-        [.5, 'rgba(255,255,255,.75)'],
-        [1, 'rgba(255,255,255,0)']
+        [0, 'rgba(141,235,250,0)'],
+        [.5, 'rgba(141,235,250,.75)'],
+        [1, 'rgba(141,235,250,0)']
       ],
       false, false
     );
@@ -370,7 +370,7 @@
 
       init: function () {
         const root = this.el;
-        const WHITE = '#ffffff';
+        const WHITE = '#8DEBFA'; // soothing cyan-blue used by all feature highlights
 
         const make = (tag, attrs, parent) => {
           const element = document.createElement(tag);
@@ -606,6 +606,53 @@
           }, moving);
         };
 
+        /* Soft cyan-blue halo animation for the VR intro icon.
+           Decorative rings only: no arrows, pointers, or rectangular frames. */
+        const introGlow = () => {
+          const halo = make('a-entity', { position: '0 0 0.035' });
+
+          // A gentle central glow, with a slow breathing pulse.
+          make('a-circle', {
+            radius: 0.34,
+            material: mat({ color: '#8DEBFA', opacity: 0.12 }),
+            animation__pulse:
+              'property: material.opacity; from: 0.06; to: 0.2; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine'
+          }, halo);
+
+          // Three concentric rings pulse outward at staggered intervals.
+          [
+            { radius: 0.28, start: 0, dur: 1800, opacity: 0.9 },
+            { radius: 0.43, start: 550, dur: 2100, opacity: 0.72 },
+            { radius: 0.58, start: 1050, dur: 2400, opacity: 0.55 }
+          ].forEach((cfg, i) => {
+            const ring = make('a-ring', {
+              'radius-inner': cfg.radius,
+              'radius-outer': cfg.radius + 0.018,
+              material: mat({ color: '#8DEBFA', opacity: cfg.opacity }),
+              animation__scale:
+                `property: scale; from: 0.88 0.88 1; to: 1.12 1.12 1; dir: alternate; dur: ${cfg.dur}; delay: ${cfg.start}; loop: true; easing: easeInOutSine`,
+              animation__fade:
+                `property: material.opacity; from: ${cfg.opacity}; to: ${cfg.opacity * 0.38}; dir: alternate; dur: ${cfg.dur}; delay: ${cfg.start}; loop: true; easing: easeInOutSine`,
+              animation__spin:
+                `property: rotation; from: 0 0 ${i * 18}; to: 0 0 ${i * 18 + (i % 2 ? -360 : 360)}; dur: ${9000 + i * 2500}; loop: true; easing: linear`
+            }, halo);
+          });
+
+          // Small cyan glints orbit around the outside without forming a box or arrow.
+          const orbit = make('a-entity', {
+            animation: 'property: rotation; from: 0 0 0; to: 0 0 360; dur: 9000; loop: true; easing: linear'
+          }, halo);
+          [0, 120, 240].forEach((angle, i) => {
+            make('a-sphere', {
+              radius: 0.025,
+              position: `${Math.cos(angle * Math.PI / 180) * 0.62} ${Math.sin(angle * Math.PI / 180) * 0.62} 0.015`,
+              material: mat({ color: '#B8F6FF', opacity: 0.95 }),
+              animation__twinkle:
+                `property: material.opacity; from: 0.35; to: 1; dir: alternate; dur: ${850 + i * 180}; loop: true; easing: easeInOutSine`
+            }, orbit);
+          });
+        };
+
         /* Feature highlights for each marker */
         switch (this.data.type) {
           case 'ring':
@@ -630,7 +677,7 @@
             break;
 
           case 'intro':
-            /* Welcome card only */
+            introGlow();
             break;
         }
 
