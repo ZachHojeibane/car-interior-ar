@@ -13,215 +13,582 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
-      font-family: 'Montserrat', Helvetica, Arial, sans-serif; }
-    .instructions { position: fixed; top: 14px; left: 14px; right: 14px; z-index: 10;
-      padding: 14px 16px; border-radius: 20px; color: #fff; text-align: center;
-      font-size: 13px; font-weight: 300; line-height: 1.6; letter-spacing: .04em;
-      background: linear-gradient(135deg, rgba(255,255,255,.22), rgba(0,0,0,.35));
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Montserrat', Helvetica, Arial, sans-serif;
+    }
+
+    .instructions {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 10;
+      padding: 14px 16px;
+      border-radius: 20px;
+      color: #fff;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.6;
+      letter-spacing: .04em;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,.22),
+        rgba(0,0,0,.35)
+      );
       border: 1px solid rgba(255,255,255,.35);
-      -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px);
-      pointer-events: none; }
-    .instructions strong { font-weight: 500; font-size: 15px; letter-spacing: .3em; }
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      pointer-events: none;
+    }
+
+    .instructions strong {
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: .3em;
+    }
   </style>
 
   <script>
-    /* ---------- Makes an entity always face the camera ---------- */
+    /* Make the information cards face the camera */
     AFRAME.registerComponent('billboard', {
-      init: function () { this.q = new THREE.Quaternion(); this.pq = new THREE.Quaternion(); },
+      init: function () {
+        this.q = new THREE.Quaternion();
+        this.pq = new THREE.Quaternion();
+      },
+
       tick: function () {
-        const cam = this.el.sceneEl.camera, o = this.el.object3D;
-        if (!cam || !o.parent) return;
+        const cam = this.el.sceneEl.camera;
+        const obj = this.el.object3D;
+
+        if (!cam || !obj.parent) return;
+
         cam.getWorldQuaternion(this.q);
-        o.parent.getWorldQuaternion(this.pq);
-        o.quaternion.copy(this.pq.invert()).multiply(this.q);
+        obj.parent.getWorldQuaternion(this.pq);
+        obj.quaternion.copy(this.pq.invert()).multiply(this.q);
       }
     });
 
-    /* ---------- Glass textures (drawn once) ---------- */
+    /* Glass textures */
     function gradCanvas(w, h, stops, vertical, radial) {
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      const x = c.getContext('2d');
-      const g = radial ? x.createRadialGradient(w/2, h/2, 0, w/2, h/2, w/2)
-                       : x.createLinearGradient(0, 0, vertical ? 0 : w, vertical ? h : 0);
-      stops.forEach(s => g.addColorStop(s[0], s[1]));
-      x.fillStyle = g; x.fillRect(0, 0, w, h);
-      return c;
-    }
-    const discTex  = gradCanvas(256, 256, [[0,'rgba(255,255,255,.05)'],[.7,'rgba(255,255,255,.14)'],[1,'rgba(255,255,255,.42)']], false, true);
-    const panelTex = gradCanvas(8, 256, [[0,'rgba(255,255,255,.30)'],[1,'rgba(255,255,255,.06)']], true);
-    const scanTex  = gradCanvas(8, 64, [[0,'rgba(255,255,255,0)'],[.5,'rgba(255,255,255,.9)'],[1,'rgba(255,255,255,0)']], true);
-    const shimTex  = gradCanvas(64, 8, [[0,'rgba(255,255,255,0)'],[.5,'rgba(255,255,255,.75)'],[1,'rgba(255,255,255,0)']], false);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
 
-    /* ---------- Frosted glass card (canvas) ---------- */
-    function roundRect(x, px, py, w, h, r) {
-      x.beginPath();
-      x.moveTo(px + r, py);
-      x.arcTo(px + w, py, px + w, py + h, r);
-      x.arcTo(px + w, py + h, px, py + h, r);
-      x.arcTo(px, py + h, px, py, r);
-      x.arcTo(px, py, px + w, py, r);
-      x.closePath();
+      const ctx = canvas.getContext('2d');
+
+      const gradient = radial
+        ? ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2)
+        : ctx.createLinearGradient(
+            0, 0,
+            vertical ? 0 : w,
+            vertical ? h : 0
+          );
+
+      stops.forEach(stop => gradient.addColorStop(stop[0], stop[1]));
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, w, h);
+
+      return canvas;
     }
+
+    const discTex = gradCanvas(
+      256, 256,
+      [
+        [0, 'rgba(255,255,255,.05)'],
+        [.7, 'rgba(255,255,255,.14)'],
+        [1, 'rgba(255,255,255,.42)']
+      ],
+      false, true
+    );
+
+    const panelTex = gradCanvas(
+      8, 256,
+      [
+        [0, 'rgba(255,255,255,.30)'],
+        [1, 'rgba(255,255,255,.06)']
+      ],
+      true, false
+    );
+
+    const scanTex = gradCanvas(
+      8, 64,
+      [
+        [0, 'rgba(255,255,255,0)'],
+        [.5, 'rgba(255,255,255,.9)'],
+        [1, 'rgba(255,255,255,0)']
+      ],
+      true, false
+    );
+
+    const shimTex = gradCanvas(
+      64, 8,
+      [
+        [0, 'rgba(255,255,255,0)'],
+        [.5, 'rgba(255,255,255,.75)'],
+        [1, 'rgba(255,255,255,0)']
+      ],
+      false, false
+    );
+
+    /* Rounded rectangle helper */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    /* Create a consistent glassmorphic information card */
     function drawCard(title, body) {
-      const W = 1024, H = 576, FONT = "Montserrat, Helvetica, Arial, sans-serif";
-      const c = document.createElement('canvas'); c.width = W; c.height = H;
-      const x = c.getContext('2d');
+      const W = 1024;
+      const H = 576;
+      const FONT = 'Montserrat, Helvetica, Arial, sans-serif';
 
-      roundRect(x, 6, 6, W - 12, H - 12, 52);
-      x.fillStyle = 'rgba(8,8,8,0.55)'; x.fill();
-      const sh = x.createLinearGradient(0, 0, W, H);
-      sh.addColorStop(0, 'rgba(255,255,255,.34)'); sh.addColorStop(.45, 'rgba(255,255,255,.06)'); sh.addColorStop(1, 'rgba(255,255,255,.12)');
-      x.fillStyle = sh; x.fill();
-      const bd = x.createLinearGradient(0, 0, W, H);
-      bd.addColorStop(0, 'rgba(255,255,255,.95)'); bd.addColorStop(.5, 'rgba(255,255,255,.22)'); bd.addColorStop(1, 'rgba(255,255,255,.6)');
-      x.lineWidth = 3; x.strokeStyle = bd; x.stroke();
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
 
-      // Title: uppercase, letter-spaced, auto-shrinks to fit
-      const t = title.toUpperCase(), maxW = W - 128, sp = 6;
-      let size = 46, total;
-      const measure = () => { x.font = `500 ${size}px ${FONT}`;
-        return [...t].reduce((a, ch) => a + x.measureText(ch).width + sp, 0); };
-      total = measure();
-      while (total > maxW && size > 20) { size -= 2; total = measure(); }
-      x.fillStyle = '#fff'; x.textBaseline = 'alphabetic';
-      let cx = 64;
-      [...t].forEach(ch => { x.fillText(ch, cx, 140); cx += x.measureText(ch).width + sp; });
+      const ctx = canvas.getContext('2d');
+      const pad = 64;
+      const maxW = W - pad * 2;
 
-      // Divider
-      x.fillStyle = 'rgba(255,255,255,.75)'; x.fillRect(64, 188, 90, 3);
+      /* Dark translucent glass background */
+      roundRect(ctx, 6, 6, W - 12, H - 12, 52);
+      ctx.fillStyle = 'rgba(10,18,17,0.68)';
+      ctx.fill();
 
-      // Body: light weight, wrapped
-      x.font = `300 48px ${FONT}`; x.fillStyle = 'rgba(255,255,255,.9)';
-      let line = '', y = 262;
-      body.split(' ').forEach(word => {
-        const test = line ? line + ' ' + word : word;
-        if (x.measureText(test).width > maxW && line) { x.fillText(line, 64, y); line = word; y += 66; }
-        else line = test;
+      /* Glass gradient */
+      const glass = ctx.createLinearGradient(0, 0, W, H);
+      glass.addColorStop(0, 'rgba(255,255,255,0.30)');
+      glass.addColorStop(.42, 'rgba(255,255,255,0.07)');
+      glass.addColorStop(1, 'rgba(255,255,255,0.16)');
+      ctx.fillStyle = glass;
+      ctx.fill();
+
+      /* Fine white glass border */
+      const border = ctx.createLinearGradient(0, 0, W, H);
+      border.addColorStop(0, 'rgba(255,255,255,0.95)');
+      border.addColorStop(.5, 'rgba(255,255,255,0.32)');
+      border.addColorStop(1, 'rgba(255,255,255,0.72)');
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = border;
+      ctx.stroke();
+
+      /* Centered title */
+      const heading = (title || '').toUpperCase();
+      const spacing = 4;
+      let titleSize = 46;
+
+      function measureHeading() {
+        ctx.font = `500 ${titleSize}px ${FONT}`;
+        return [...heading].reduce(
+          (sum, char) => sum + ctx.measureText(char).width,
+          0
+        ) + Math.max(0, heading.length - 1) * spacing;
+      }
+
+      let headingWidth = measureHeading();
+
+      while (headingWidth > maxW && titleSize > 24) {
+        titleSize -= 2;
+        headingWidth = measureHeading();
+      }
+
+      ctx.font = `500 ${titleSize}px ${FONT}`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textBaseline = 'alphabetic';
+
+      let tx = pad + Math.max(0, (maxW - headingWidth) / 2);
+
+      [...heading].forEach((char, index) => {
+        ctx.fillText(char, tx, 132);
+        tx += ctx.measureText(char).width +
+          (index < heading.length - 1 ? spacing : 0);
       });
-      x.fillText(line, 64, y);
-      return c;
+
+      /* Divider */
+      ctx.fillStyle = 'rgba(255,255,255,0.78)';
+      ctx.fillRect(pad, 174, 92, 3);
+
+      /* Wrap body text to fit the card */
+      const words = (body || '').split(/\s+/).filter(Boolean);
+      let bodySize = 43;
+      let lines = [];
+
+      function makeLines() {
+        ctx.font = `300 ${bodySize}px ${FONT}`;
+
+        const result = [];
+        let line = '';
+
+        words.forEach(word => {
+          const test = line ? `${line} ${word}` : word;
+
+          if (ctx.measureText(test).width > maxW && line) {
+            result.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        });
+
+        if (line) result.push(line);
+        return result;
+      }
+
+      lines = makeLines();
+
+      while (lines.length > 4 && bodySize > 28) {
+        bodySize -= 2;
+        lines = makeLines();
+      }
+
+      ctx.font = `300 ${bodySize}px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.textBaseline = 'alphabetic';
+
+      const lineHeight = bodySize * 1.38;
+      const visibleLines = lines.slice(0, 4);
+      const totalHeight = visibleLines.length * lineHeight;
+      let y = 250 + Math.max(0, (270 - totalHeight) / 2);
+
+      visibleLines.forEach(line => {
+        ctx.fillText(line, pad, y, maxW);
+        y += lineHeight;
+      });
+
+      return canvas;
     }
 
-    /* ---------- callout: glass highlight + arrows + pointer + card ---------- */
+    /* Callout component */
     AFRAME.registerComponent('callout', {
-      schema: { type: { default: 'ring' } },
+      schema: {
+        type: { default: 'ring' }
+      },
 
       init: function () {
-        const root = this.el, WHITE = '#ffffff';
+        const root = this.el;
+        const WHITE = '#ffffff';
+
         const make = (tag, attrs, parent) => {
-          const e = document.createElement(tag);
-          for (const k in attrs) e.setAttribute(k, attrs[k]);
-          (parent || root).appendChild(e);
-          return e;
-        };
-        const mat = (o) => Object.assign({ shader: 'flat', transparent: true, side: 'double', depthWrite: false }, o);
-        const line = (g, w, h, x, y, rz, col, op, z) => make('a-plane', {
-          width: w, height: h, position: `${x} ${y} ${z || 0}`, rotation: `0 0 ${rz || 0}`,
-          material: mat({ color: col, opacity: op }) }, g);
-        const BOB = 'property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine';
-        const PULSE = 'property: material.opacity; from: 1; to: 0.45; dir: alternate; dur: 900; loop: true; easing: easeInOutSine';
+          const element = document.createElement(tag);
 
-        // Minimal glass arrow: thin line + open chevron, tip points along +y
-        const arrow = (x, y, rot) => {
-          const g = make('a-entity', { position: `${x} ${y} 0.05`, rotation: `0 0 ${rot}` });
-          const b = make('a-entity', { animation: BOB }, g);
-          [[0.034, 0.3, '#000', 0.3, -0.01], [0.012, 0, WHITE, 0.95, 0]].forEach(([t, extra, col, op, z]) => {
-            const e = extra ? 0.03 : 0;
-            line(b, t, 0.3 + e, 0, 0.15, 0, col, op, z);
-            line(b, 0.11 + e, t, -0.0354, 0.2579, 50, col, op, z);
-            line(b, 0.11 + e, t, 0.0354, 0.2579, -50, col, op, z);
+          for (const key in attrs) {
+            element.setAttribute(key, attrs[key]);
+          }
+
+          (parent || root).appendChild(element);
+          return element;
+        };
+
+        const mat = options => Object.assign({
+          shader: 'flat',
+          transparent: true,
+          side: 'double',
+          depthWrite: false
+        }, options);
+
+        const line = (group, w, h, x, y, rz, color, opacity, z) =>
+          make('a-plane', {
+            width: w,
+            height: h,
+            position: `${x} ${y} ${z || 0}`,
+            rotation: `0 0 ${rz || 0}`,
+            material: mat({
+              color: color,
+              opacity: opacity
+            })
+          }, group);
+
+        const BOB =
+          'property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine';
+
+        const PULSE =
+          'property: material.opacity; from: 1; to: 0.45; dir: alternate; dur: 900; loop: true; easing: easeInOutSine';
+
+        /* Animated arrow */
+        const arrow = (x, y, rotation) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.05`,
+            rotation: `0 0 ${rotation}`
+          });
+
+          const moving = make('a-entity', {
+            animation: BOB
+          }, group);
+
+          [
+            [0.034, 0.3, '#000', 0.3, -0.01],
+            [0.012, 0, WHITE, 0.95, 0]
+          ].forEach(([thickness, extra, color, opacity, z]) => {
+            const addition = extra ? 0.03 : 0;
+
+            line(moving, thickness, 0.3 + addition, 0, 0.15, 0,
+              color, opacity, z);
+
+            line(moving, 0.11 + addition, thickness,
+              -0.0354, 0.2579, 50, color, opacity, z);
+
+            line(moving, 0.11 + addition, thickness,
+              0.0354, 0.2579, -50, color, opacity, z);
           });
         };
 
-        // Frosted circular highlight with orbiting arcs and ripple
-        const ring = (x, y, r) => {
-          const g = make('a-entity', { position: `${x} ${y} 0.03` });
-          make('a-circle', { radius: r, material: mat({ src: discTex }) }, g);
-          make('a-ring', { 'radius-inner': r - 0.05, 'radius-outer': r + 0.02, material: mat({ color: '#000', opacity: 0.25 }) }, g);
-          make('a-ring', { 'radius-inner': r - 0.012, 'radius-outer': r, position: '0 0 0.005',
-            material: mat({ color: WHITE, opacity: 1 }), animation: PULSE }, g);
-          make('a-ring', { 'radius-inner': r + 0.05, 'radius-outer': r + 0.066, 'theta-length': 110, position: '0 0 0.005',
+        /* Circular highlight */
+        const ring = (x, y, radius) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.03`
+          });
+
+          make('a-circle', {
+            radius: radius,
+            material: mat({ src: discTex })
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.05,
+            'radius-outer': radius + 0.02,
+            material: mat({ color: '#000', opacity: 0.25 })
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.012,
+            'radius-outer': radius,
+            position: '0 0 0.005',
+            material: mat({ color: WHITE, opacity: 1 }),
+            animation: PULSE
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius + 0.05,
+            'radius-outer': radius + 0.066,
+            'theta-length': 110,
+            position: '0 0 0.005',
             material: mat({ color: WHITE, opacity: 0.9 }),
-            animation: 'property: rotation; from: 0 0 0; to: 0 0 -360; dur: 4000; loop: true; easing: linear' }, g);
-          make('a-ring', { 'radius-inner': r + 0.09, 'radius-outer': r + 0.1, 'theta-start': 180, 'theta-length': 80, position: '0 0 0.005',
+            animation:
+              'property: rotation; from: 0 0 0; to: 0 0 -360; dur: 4000; loop: true; easing: linear'
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius + 0.09,
+            'radius-outer': radius + 0.1,
+            'theta-start': 180,
+            'theta-length': 80,
+            position: '0 0 0.005',
             material: mat({ color: WHITE, opacity: 0.55 }),
-            animation: 'property: rotation; from: 0 0 0; to: 0 0 360; dur: 6000; loop: true; easing: linear' }, g);
-          make('a-ring', { 'radius-inner': r - 0.01, 'radius-outer': r, material: mat({ color: WHITE, opacity: 0.6 }),
-            animation__s: 'property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 1800; loop: true; easing: easeOutQuad',
-            animation__o: 'property: material.opacity; from: 0.6; to: 0; dur: 1800; loop: true; easing: easeOutQuad' }, g);
+            animation:
+              'property: rotation; from: 0 0 0; to: 0 0 360; dur: 6000; loop: true; easing: linear'
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.01,
+            'radius-outer': radius,
+            material: mat({ color: WHITE, opacity: 0.6 }),
+            animation__s:
+              'property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 1800; loop: true; easing: easeOutQuad',
+            animation__o:
+              'property: material.opacity; from: 0.6; to: 0; dur: 1800; loop: true; easing: easeOutQuad'
+          }, group);
         };
 
-        // Frosted rectangular highlight with corner accents + scan/shimmer
+        /* Rectangular scanning highlight */
         const frame = (x, y, w, h, mode) => {
-          const g = make('a-entity', { position: `${x} ${y} 0.03` });
-          make('a-plane', { width: w, height: h, material: mat({ src: panelTex }) }, g);
-          [[0, h/2, w, 1], [0, -h/2, w, 1], [-w/2, 0, h, 0], [w/2, 0, h, 0]].forEach(s => {
-            const horiz = s[3] === 1 || (s[3] === undefined);
-            const isH = s[3] === 1;
-            line(g, isH ? s[2] : 0.03, isH ? 0.03 : s[2], s[0], s[1], 0, '#000', 0.2, -0.005);
-            line(g, isH ? s[2] : 0.01, isH ? 0.01 : s[2], s[0], s[1], 0, WHITE, 0.85, 0);
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.03`
           });
-          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(c => {
-            const a = make('a-entity', { animation: PULSE.replace('0.45', '0.6') }, g);
-            [make('a-plane', { width: 0.14, height: 0.03, position: `${c[0]*(w/2-0.07)} ${c[1]*h/2} 0.01`, material: mat({ color: WHITE, opacity: 1 }) }, g),
-             make('a-plane', { width: 0.03, height: 0.14, position: `${c[0]*w/2} ${c[1]*(h/2-0.07)} 0.01`, material: mat({ color: WHITE, opacity: 1 }) }, g)]
-              .forEach(p => p.setAttribute('animation', PULSE));
-            g.removeChild(a);
+
+          make('a-plane', {
+            width: w,
+            height: h,
+            material: mat({ src: panelTex })
+          }, group);
+
+          [
+            [0, h / 2, w, 1],
+            [0, -h / 2, w, 1],
+            [-w / 2, 0, h, 0],
+            [w / 2, 0, h, 0]
+          ].forEach(side => {
+            const horizontal = side[3] === 1;
+
+            line(group,
+              horizontal ? side[2] : 0.03,
+              horizontal ? 0.03 : side[2],
+              side[0], side[1], 0, '#000', 0.2, -0.005);
+
+            line(group,
+              horizontal ? side[2] : 0.01,
+              horizontal ? 0.01 : side[2],
+              side[0], side[1], 0, WHITE, 0.85, 0);
           });
+
+          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(corner => {
+            const horizontal = make('a-plane', {
+              width: 0.14,
+              height: 0.03,
+              position: `${corner[0] * (w / 2 - 0.07)} ${corner[1] * h / 2} 0.01`,
+              material: mat({ color: WHITE, opacity: 1 }),
+              animation: PULSE
+            }, group);
+
+            const vertical = make('a-plane', {
+              width: 0.03,
+              height: 0.14,
+              position: `${corner[0] * w / 2} ${corner[1] * (h / 2 - 0.07)} 0.01`,
+              material: mat({ color: WHITE, opacity: 1 }),
+              animation: PULSE
+            }, group);
+          });
+
           if (mode === 'scan') {
-            make('a-plane', { width: w * 0.96, height: 0.16, position: `0 ${-h/2} 0.015`, material: mat({ src: scanTex }),
-              animation: `property: position; from: 0 ${-h/2} 0.015; to: 0 ${h/2} 0.015; dur: 1800; loop: true; easing: linear` }, g);
+            make('a-plane', {
+              width: w * 0.96,
+              height: 0.16,
+              position: `0 ${-h / 2} 0.015`,
+              material: mat({ src: scanTex }),
+              animation:
+                `property: position; from: 0 ${-h / 2} 0.015; to: 0 ${h / 2} 0.015; dur: 1800; loop: true; easing: linear`
+            }, group);
           } else if (mode === 'shimmer') {
-            make('a-plane', { width: 0.3, height: h, position: `${-w/2 + 0.15} 0 0.015`, material: mat({ src: shimTex, opacity: 0 }),
-              animation__m: `property: position; from: ${-w/2 + 0.15} 0 0.015; to: ${w/2 - 0.15} 0 0.015; dur: 2400; loop: true; easing: linear`,
-              animation__f: 'property: material.opacity; from: 0; to: 1; dir: alternate; dur: 1200; loop: true; easing: easeInOutSine' }, g);
+            make('a-plane', {
+              width: 0.3,
+              height: h,
+              position: `${-w / 2 + 0.15} 0 0.015`,
+              material: mat({ src: shimTex, opacity: 0 }),
+              animation__m:
+                `property: position; from: ${-w / 2 + 0.15} 0 0.015; to: ${w / 2 - 0.15} 0 0.015; dur: 2400; loop: true; easing: linear`,
+              animation__f:
+                'property: material.opacity; from: 0; to: 1; dir: alternate; dur: 1200; loop: true; easing: easeInOutSine'
+            }, group);
           }
         };
 
-        // Minimal pointer: stem + hollow ring head, bobbing, over a ripple ring
+        /* Gear-selector pointer */
         const pin = (x, y) => {
-          const g = make('a-entity', { position: `${x} ${y} 0.08` });
-          const b = make('a-entity', { animation: 'property: position; from: 0 0 0; to: 0 -0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine' }, g);
-          line(b, 0.034, 0.3, 0, 0.2, 0, '#000', 0.3, -0.01);
-          line(b, 0.012, 0.3, 0, 0.2, 0, WHITE, 0.95, 0);
-          make('a-circle', { radius: 0.085, position: '0 0.43 0', material: mat({ src: discTex }) }, b);
-          make('a-ring', { 'radius-inner': 0.07, 'radius-outer': 0.115, position: '0 0.43 -0.005', material: mat({ color: '#000', opacity: 0.3 }) }, b);
-          make('a-ring', { 'radius-inner': 0.088, 'radius-outer': 0.1, position: '0 0.43 0.005', material: mat({ color: WHITE, opacity: 1 }) }, b);
-          make('a-circle', { radius: 0.03, position: '0 0.43 0.01', material: mat({ color: WHITE, opacity: 1 }) }, b);
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.08`
+          });
+
+          const moving = make('a-entity', {
+            animation:
+              'property: position; from: 0 0 0; to: 0 -0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine'
+          }, group);
+
+          line(moving, 0.034, 0.3, 0, 0.2, 0, '#000', 0.3, -0.01);
+          line(moving, 0.012, 0.3, 0, 0.2, 0, WHITE, 0.95, 0);
+
+          make('a-circle', {
+            radius: 0.085,
+            position: '0 0.43 0',
+            material: mat({ src: discTex })
+          }, moving);
+
+          make('a-ring', {
+            'radius-inner': 0.07,
+            'radius-outer': 0.115,
+            position: '0 0.43 -0.005',
+            material: mat({ color: '#000', opacity: 0.3 })
+          }, moving);
+
+          make('a-ring', {
+            'radius-inner': 0.088,
+            'radius-outer': 0.1,
+            position: '0 0.43 0.005',
+            material: mat({ color: WHITE, opacity: 1 })
+          }, moving);
+
+          make('a-circle', {
+            radius: 0.03,
+            position: '0 0.43 0.01',
+            material: mat({ color: WHITE, opacity: 1 })
+          }, moving);
         };
 
+        /* Feature highlights for each marker */
         switch (this.data.type) {
-          case 'ring':  ring(0, 0, 0.38); arrow(0, -0.85, 0); break;                   // steering wheel
-          case 'panel': frame(0, 0, 0.9, 0.45, 'scan'); arrow(0, -0.75, 0); break;      // dials
-          case 'bar':   frame(0, 0, 1.0, 0.3, 'shimmer'); arrow(-0.95, 0, -90); arrow(0.95, 0, 90); break; // switches
-          case 'pin':   ring(0, -0.2, 0.22); pin(0, 0.05); break;                        // gear shifter
+          case 'ring':
+            ring(0, 0, 0.38);
+            arrow(0, -0.85, 0);
+            break;
+
+          case 'panel':
+            frame(0, 0, 0.9, 0.45, 'scan');
+            arrow(0, -0.75, 0);
+            break;
+
+          case 'bar':
+            frame(0, 0, 1.0, 0.3, 'shimmer');
+            arrow(-0.95, 0, -90);
+            arrow(0.95, 0, 90);
+            break;
+
+          case 'pin':
+            ring(0, -0.2, 0.22);
+            pin(0, 0.05);
+            break;
+
+          case 'intro':
+            /* Welcome card only */
+            break;
         }
 
-        // Glass info card: sits above the marker and always faces the camera
+        /* Same glassmorphic card for every marker */
         let card = null;
-        const build = () => {
-          card = make('a-entity', { position: '0 1.12 0.1', billboard: '',
-            animation__in: 'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 600; easing: easeOutCubic; startEvents: pop',
-            animation__float: 'property: position; from: 0 1.12 0.1; to: 0 1.16 0.1; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine' });
-          make('a-plane', { width: 1.5, height: 0.844,
-            material: mat({ src: drawCard(root.dataset.title || '', root.dataset.body || '') }) }, card);
-        };
-        if (document.fonts && document.fonts.load) {
-          Promise.all([document.fonts.load('500 40px Montserrat'), document.fonts.load('300 40px Montserrat')]).then(build, build);
-        } else build();
 
-        root.addEventListener('targetFound', () => { if (card) card.emit('pop'); });
+        const build = () => {
+          card = make('a-entity', {
+            position: '0 1.12 0.1',
+            billboard: '',
+            animation__in:
+              'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 600; easing: easeOutCubic; startEvents: pop',
+            animation__float:
+              'property: position; from: 0 1.12 0.1; to: 0 1.16 0.1; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine'
+          });
+
+          make('a-plane', {
+            width: 1.5,
+            height: 0.844,
+            material: mat({
+              src: drawCard(
+                root.dataset.title || '',
+                root.dataset.body || ''
+              )
+            })
+          }, card);
+        };
+
+        if (document.fonts && document.fonts.load) {
+          Promise.all([
+            document.fonts.load('500 40px Montserrat'),
+            document.fonts.load('300 40px Montserrat')
+          ]).then(build, build);
+        } else {
+          build();
+        }
+
+        root.addEventListener('targetFound', () => {
+          if (card) card.emit('pop');
+        });
       }
     });
   </script>
 </head>
 
 <body>
-
   <div class="instructions">
     <strong>CAR INTERIOR AR</strong><br>
-    Point your camera at one of the four car icons.
+    Point your camera at one of the five car icons.
   </div>
 
   <a-scene
@@ -233,48 +600,652 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- 0: SWITCHES / DASHBOARD -->
-    <a-entity mindar-image-target="targetIndex: 0" callout="type: bar"
+   <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Car Interior AR Experience</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;500&display=swap" rel="stylesheet">
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Montserrat', Helvetica, Arial, sans-serif;
+    }
+
+    .instructions {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      z-index: 10;
+      padding: 14px 16px;
+      border-radius: 20px;
+      color: #fff;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 300;
+      line-height: 1.6;
+      letter-spacing: .04em;
+      background: linear-gradient(
+        135deg,
+        rgba(255,255,255,.22),
+        rgba(0,0,0,.35)
+      );
+      border: 1px solid rgba(255,255,255,.35);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      pointer-events: none;
+    }
+
+    .instructions strong {
+      font-weight: 500;
+      font-size: 15px;
+      letter-spacing: .3em;
+    }
+  </style>
+
+  <script>
+    /* Make the information cards face the camera */
+    AFRAME.registerComponent('billboard', {
+      init: function () {
+        this.q = new THREE.Quaternion();
+        this.pq = new THREE.Quaternion();
+      },
+
+      tick: function () {
+        const cam = this.el.sceneEl.camera;
+        const obj = this.el.object3D;
+
+        if (!cam || !obj.parent) return;
+
+        cam.getWorldQuaternion(this.q);
+        obj.parent.getWorldQuaternion(this.pq);
+        obj.quaternion.copy(this.pq.invert()).multiply(this.q);
+      }
+    });
+
+    /* Glass textures */
+    function gradCanvas(w, h, stops, vertical, radial) {
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+
+      const gradient = radial
+        ? ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2)
+        : ctx.createLinearGradient(
+            0, 0,
+            vertical ? 0 : w,
+            vertical ? h : 0
+          );
+
+      stops.forEach(stop => gradient.addColorStop(stop[0], stop[1]));
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, w, h);
+
+      return canvas;
+    }
+
+    const discTex = gradCanvas(
+      256, 256,
+      [
+        [0, 'rgba(255,255,255,.05)'],
+        [.7, 'rgba(255,255,255,.14)'],
+        [1, 'rgba(255,255,255,.42)']
+      ],
+      false, true
+    );
+
+    const panelTex = gradCanvas(
+      8, 256,
+      [
+        [0, 'rgba(255,255,255,.30)'],
+        [1, 'rgba(255,255,255,.06)']
+      ],
+      true, false
+    );
+
+    const scanTex = gradCanvas(
+      8, 64,
+      [
+        [0, 'rgba(255,255,255,0)'],
+        [.5, 'rgba(255,255,255,.9)'],
+        [1, 'rgba(255,255,255,0)']
+      ],
+      true, false
+    );
+
+    const shimTex = gradCanvas(
+      64, 8,
+      [
+        [0, 'rgba(255,255,255,0)'],
+        [.5, 'rgba(255,255,255,.75)'],
+        [1, 'rgba(255,255,255,0)']
+      ],
+      false, false
+    );
+
+    /* Rounded rectangle helper */
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    /* Create a consistent glassmorphic information card */
+    function drawCard(title, body) {
+      const W = 1024;
+      const H = 576;
+      const FONT = 'Montserrat, Helvetica, Arial, sans-serif';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = W;
+      canvas.height = H;
+
+      const ctx = canvas.getContext('2d');
+      const pad = 64;
+      const maxW = W - pad * 2;
+
+      /* Dark translucent glass background */
+      roundRect(ctx, 6, 6, W - 12, H - 12, 52);
+      ctx.fillStyle = 'rgba(10,18,17,0.68)';
+      ctx.fill();
+
+      /* Glass gradient */
+      const glass = ctx.createLinearGradient(0, 0, W, H);
+      glass.addColorStop(0, 'rgba(255,255,255,0.30)');
+      glass.addColorStop(.42, 'rgba(255,255,255,0.07)');
+      glass.addColorStop(1, 'rgba(255,255,255,0.16)');
+      ctx.fillStyle = glass;
+      ctx.fill();
+
+      /* Fine white glass border */
+      const border = ctx.createLinearGradient(0, 0, W, H);
+      border.addColorStop(0, 'rgba(255,255,255,0.95)');
+      border.addColorStop(.5, 'rgba(255,255,255,0.32)');
+      border.addColorStop(1, 'rgba(255,255,255,0.72)');
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = border;
+      ctx.stroke();
+
+      /* Centered title */
+      const heading = (title || '').toUpperCase();
+      const spacing = 4;
+      let titleSize = 46;
+
+      function measureHeading() {
+        ctx.font = `500 ${titleSize}px ${FONT}`;
+        return [...heading].reduce(
+          (sum, char) => sum + ctx.measureText(char).width,
+          0
+        ) + Math.max(0, heading.length - 1) * spacing;
+      }
+
+      let headingWidth = measureHeading();
+
+      while (headingWidth > maxW && titleSize > 24) {
+        titleSize -= 2;
+        headingWidth = measureHeading();
+      }
+
+      ctx.font = `500 ${titleSize}px ${FONT}`;
+      ctx.fillStyle = '#FFFFFF';
+      ctx.textBaseline = 'alphabetic';
+
+      let tx = pad + Math.max(0, (maxW - headingWidth) / 2);
+
+      [...heading].forEach((char, index) => {
+        ctx.fillText(char, tx, 132);
+        tx += ctx.measureText(char).width +
+          (index < heading.length - 1 ? spacing : 0);
+      });
+
+      /* Divider */
+      ctx.fillStyle = 'rgba(255,255,255,0.78)';
+      ctx.fillRect(pad, 174, 92, 3);
+
+      /* Wrap body text to fit the card */
+      const words = (body || '').split(/\s+/).filter(Boolean);
+      let bodySize = 43;
+      let lines = [];
+
+      function makeLines() {
+        ctx.font = `300 ${bodySize}px ${FONT}`;
+
+        const result = [];
+        let line = '';
+
+        words.forEach(word => {
+          const test = line ? `${line} ${word}` : word;
+
+          if (ctx.measureText(test).width > maxW && line) {
+            result.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        });
+
+        if (line) result.push(line);
+        return result;
+      }
+
+      lines = makeLines();
+
+      while (lines.length > 4 && bodySize > 28) {
+        bodySize -= 2;
+        lines = makeLines();
+      }
+
+      ctx.font = `300 ${bodySize}px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.94)';
+      ctx.textBaseline = 'alphabetic';
+
+      const lineHeight = bodySize * 1.38;
+      const visibleLines = lines.slice(0, 4);
+      const totalHeight = visibleLines.length * lineHeight;
+      let y = 250 + Math.max(0, (270 - totalHeight) / 2);
+
+      visibleLines.forEach(line => {
+        ctx.fillText(line, pad, y, maxW);
+        y += lineHeight;
+      });
+
+      return canvas;
+    }
+
+    /* Callout component */
+    AFRAME.registerComponent('callout', {
+      schema: {
+        type: { default: 'ring' }
+      },
+
+      init: function () {
+        const root = this.el;
+        const WHITE = '#ffffff';
+
+        const make = (tag, attrs, parent) => {
+          const element = document.createElement(tag);
+
+          for (const key in attrs) {
+            element.setAttribute(key, attrs[key]);
+          }
+
+          (parent || root).appendChild(element);
+          return element;
+        };
+
+        const mat = options => Object.assign({
+          shader: 'flat',
+          transparent: true,
+          side: 'double',
+          depthWrite: false
+        }, options);
+
+        const line = (group, w, h, x, y, rz, color, opacity, z) =>
+          make('a-plane', {
+            width: w,
+            height: h,
+            position: `${x} ${y} ${z || 0}`,
+            rotation: `0 0 ${rz || 0}`,
+            material: mat({
+              color: color,
+              opacity: opacity
+            })
+          }, group);
+
+        const BOB =
+          'property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine';
+
+        const PULSE =
+          'property: material.opacity; from: 1; to: 0.45; dir: alternate; dur: 900; loop: true; easing: easeInOutSine';
+
+        /* Animated arrow */
+        const arrow = (x, y, rotation) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.05`,
+            rotation: `0 0 ${rotation}`
+          });
+
+          const moving = make('a-entity', {
+            animation: BOB
+          }, group);
+
+          [
+            [0.034, 0.3, '#000', 0.3, -0.01],
+            [0.012, 0, WHITE, 0.95, 0]
+          ].forEach(([thickness, extra, color, opacity, z]) => {
+            const addition = extra ? 0.03 : 0;
+
+            line(moving, thickness, 0.3 + addition, 0, 0.15, 0,
+              color, opacity, z);
+
+            line(moving, 0.11 + addition, thickness,
+              -0.0354, 0.2579, 50, color, opacity, z);
+
+            line(moving, 0.11 + addition, thickness,
+              0.0354, 0.2579, -50, color, opacity, z);
+          });
+        };
+
+        /* Circular highlight */
+        const ring = (x, y, radius) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.03`
+          });
+
+          make('a-circle', {
+            radius: radius,
+            material: mat({ src: discTex })
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.05,
+            'radius-outer': radius + 0.02,
+            material: mat({ color: '#000', opacity: 0.25 })
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.012,
+            'radius-outer': radius,
+            position: '0 0 0.005',
+            material: mat({ color: WHITE, opacity: 1 }),
+            animation: PULSE
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius + 0.05,
+            'radius-outer': radius + 0.066,
+            'theta-length': 110,
+            position: '0 0 0.005',
+            material: mat({ color: WHITE, opacity: 0.9 }),
+            animation:
+              'property: rotation; from: 0 0 0; to: 0 0 -360; dur: 4000; loop: true; easing: linear'
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius + 0.09,
+            'radius-outer': radius + 0.1,
+            'theta-start': 180,
+            'theta-length': 80,
+            position: '0 0 0.005',
+            material: mat({ color: WHITE, opacity: 0.55 }),
+            animation:
+              'property: rotation; from: 0 0 0; to: 0 0 360; dur: 6000; loop: true; easing: linear'
+          }, group);
+
+          make('a-ring', {
+            'radius-inner': radius - 0.01,
+            'radius-outer': radius,
+            material: mat({ color: WHITE, opacity: 0.6 }),
+            animation__s:
+              'property: scale; from: 1 1 1; to: 1.5 1.5 1.5; dur: 1800; loop: true; easing: easeOutQuad',
+            animation__o:
+              'property: material.opacity; from: 0.6; to: 0; dur: 1800; loop: true; easing: easeOutQuad'
+          }, group);
+        };
+
+        /* Rectangular scanning highlight */
+        const frame = (x, y, w, h, mode) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.03`
+          });
+
+          make('a-plane', {
+            width: w,
+            height: h,
+            material: mat({ src: panelTex })
+          }, group);
+
+          [
+            [0, h / 2, w, 1],
+            [0, -h / 2, w, 1],
+            [-w / 2, 0, h, 0],
+            [w / 2, 0, h, 0]
+          ].forEach(side => {
+            const horizontal = side[3] === 1;
+
+            line(group,
+              horizontal ? side[2] : 0.03,
+              horizontal ? 0.03 : side[2],
+              side[0], side[1], 0, '#000', 0.2, -0.005);
+
+            line(group,
+              horizontal ? side[2] : 0.01,
+              horizontal ? 0.01 : side[2],
+              side[0], side[1], 0, WHITE, 0.85, 0);
+          });
+
+          [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(corner => {
+            const horizontal = make('a-plane', {
+              width: 0.14,
+              height: 0.03,
+              position: `${corner[0] * (w / 2 - 0.07)} ${corner[1] * h / 2} 0.01`,
+              material: mat({ color: WHITE, opacity: 1 }),
+              animation: PULSE
+            }, group);
+
+            const vertical = make('a-plane', {
+              width: 0.03,
+              height: 0.14,
+              position: `${corner[0] * w / 2} ${corner[1] * (h / 2 - 0.07)} 0.01`,
+              material: mat({ color: WHITE, opacity: 1 }),
+              animation: PULSE
+            }, group);
+          });
+
+          if (mode === 'scan') {
+            make('a-plane', {
+              width: w * 0.96,
+              height: 0.16,
+              position: `0 ${-h / 2} 0.015`,
+              material: mat({ src: scanTex }),
+              animation:
+                `property: position; from: 0 ${-h / 2} 0.015; to: 0 ${h / 2} 0.015; dur: 1800; loop: true; easing: linear`
+            }, group);
+          } else if (mode === 'shimmer') {
+            make('a-plane', {
+              width: 0.3,
+              height: h,
+              position: `${-w / 2 + 0.15} 0 0.015`,
+              material: mat({ src: shimTex, opacity: 0 }),
+              animation__m:
+                `property: position; from: ${-w / 2 + 0.15} 0 0.015; to: ${w / 2 - 0.15} 0 0.015; dur: 2400; loop: true; easing: linear`,
+              animation__f:
+                'property: material.opacity; from: 0; to: 1; dir: alternate; dur: 1200; loop: true; easing: easeInOutSine'
+            }, group);
+          }
+        };
+
+        /* Gear-selector pointer */
+        const pin = (x, y) => {
+          const group = make('a-entity', {
+            position: `${x} ${y} 0.08`
+          });
+
+          const moving = make('a-entity', {
+            animation:
+              'property: position; from: 0 0 0; to: 0 -0.08 0; dir: alternate; dur: 700; loop: true; easing: easeInOutSine'
+          }, group);
+
+          line(moving, 0.034, 0.3, 0, 0.2, 0, '#000', 0.3, -0.01);
+          line(moving, 0.012, 0.3, 0, 0.2, 0, WHITE, 0.95, 0);
+
+          make('a-circle', {
+            radius: 0.085,
+            position: '0 0.43 0',
+            material: mat({ src: discTex })
+          }, moving);
+
+          make('a-ring', {
+            'radius-inner': 0.07,
+            'radius-outer': 0.115,
+            position: '0 0.43 -0.005',
+            material: mat({ color: '#000', opacity: 0.3 })
+          }, moving);
+
+          make('a-ring', {
+            'radius-inner': 0.088,
+            'radius-outer': 0.1,
+            position: '0 0.43 0.005',
+            material: mat({ color: WHITE, opacity: 1 })
+          }, moving);
+
+          make('a-circle', {
+            radius: 0.03,
+            position: '0 0.43 0.01',
+            material: mat({ color: WHITE, opacity: 1 })
+          }, moving);
+        };
+
+        /* Feature highlights for each marker */
+        switch (this.data.type) {
+          case 'ring':
+            ring(0, 0, 0.38);
+            arrow(0, -0.85, 0);
+            break;
+
+          case 'panel':
+            frame(0, 0, 0.9, 0.45, 'scan');
+            arrow(0, -0.75, 0);
+            break;
+
+          case 'bar':
+            frame(0, 0, 1.0, 0.3, 'shimmer');
+            arrow(-0.95, 0, -90);
+            arrow(0.95, 0, 90);
+            break;
+
+          case 'pin':
+            ring(0, -0.2, 0.22);
+            pin(0, 0.05);
+            break;
+
+          case 'intro':
+            /* Welcome card only */
+            break;
+        }
+
+        /* Same glassmorphic card for every marker */
+        let card = null;
+
+        const build = () => {
+          card = make('a-entity', {
+            position: '0 1.12 0.1',
+            billboard: '',
+            animation__in:
+              'property: scale; from: 0.01 0.01 0.01; to: 1 1 1; dur: 600; easing: easeOutCubic; startEvents: pop',
+            animation__float:
+              'property: position; from: 0 1.12 0.1; to: 0 1.16 0.1; dir: alternate; loop: true; dur: 1800; easing: easeInOutSine'
+          });
+
+          make('a-plane', {
+            width: 1.5,
+            height: 0.844,
+            material: mat({
+              src: drawCard(
+                root.dataset.title || '',
+                root.dataset.body || ''
+              )
+            })
+          }, card);
+        };
+
+        if (document.fonts && document.fonts.load) {
+          Promise.all([
+            document.fonts.load('500 40px Montserrat'),
+            document.fonts.load('300 40px Montserrat')
+          ]).then(build, build);
+        } else {
+          build();
+        }
+
+        root.addEventListener('targetFound', () => {
+          if (card) card.emit('pop');
+        });
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <div class="instructions">
+    <strong>CAR INTERIOR AR</strong><br>
+    Point your camera at one of the five car icons.
+  </div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: https://raw.githubusercontent.com/ZachHojeibane/car-interior-ar/main/targets.mind; autoStart: true;"
+    color-space="sRGB"
+    renderer="colorManagement: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- 0: TOGGLE SWITCHES / DASHBOARD -->
+    <a-entity
+      mindar-image-target="targetIndex: 0"
+      callout="type: bar"
       data-title="Tactile Controls"
-      data-body="Discover the details behind the cabin's analog-style toggle switches."></a-entity>
+      data-body="Discover the details behind the cabin's analog-style toggle switches.">
+    </a-entity>
 
     <!-- 1: GEAR SHIFTER -->
-    <a-entity mindar-image-target="targetIndex: 1" callout="type: pin"
+    <a-entity
+      mindar-image-target="targetIndex: 1"
+      callout="type: pin"
       data-title="The Gear Selector"
-      data-body="Discover the design and craftsmanship of the gear shifter."></a-entity>
+      data-body="Discover the design and craftsmanship of the gear shifter.">
+    </a-entity>
 
-    <!-- 2: DIAL / INSTRUMENT PANEL -->
-    <a-entity mindar-image-target="targetIndex: 2" callout="type: panel"
+    <!-- 2: INSTRUMENT DIAL -->
+    <a-entity
+      mindar-image-target="targetIndex: 2"
+      callout="type: panel"
       data-title="Inspired by History"
-      data-body="These dials were inspired by a WW2 submarine."></a-entity>
+      data-body="These dials were inspired by a WW2 submarine.">
+    </a-entity>
 
     <!-- 3: STEERING WHEEL -->
-    <a-entity mindar-image-target="targetIndex: 3" callout="type: ring"
+    <a-entity
+      mindar-image-target="targetIndex: 3"
+      callout="type: ring"
       data-title="M Sport Steering Wheel"
-      data-body="This steering wheel comes directly from the M Sport line. Our most racy offering."></a-entity>
+      data-body="This steering wheel comes directly from the M Sport line. Our most racy offering.">
+    </a-entity>
 
-    <!-- POP-UP 5: AR INTRO -->
-<a-entity mindar-image-target="targetIndex: 4">
-  <a-entity position="0.7 0 0.05">
-    <a-plane
-      width="1.5"
-      height="0.8"
-      material="shader: flat; color: #18211F; opacity: 0.94; transparent: true">
-    </a-plane>
+    <!-- 4: CAR / VR INTRO -->
+    <a-entity
+      mindar-image-target="targetIndex: 4"
+      callout="type: intro"
+      data-title="Welcome to Car AR"
+      data-body="Scan the car icons to explore its design, features, and stories through augmented reality.">
+    </a-entity>
 
-    <a-text
-      value="WELCOME TO CAR AR&#10;&#10;Scan the car icons to explore its design, features, and stories through augmented reality."
-      color="#FFFFFF"
-      align="left"
-      anchor="center"
-      width="1.3"
-      wrap-count="27"
-      position="-0.65 0 0.01">
-    </a-text>
-  </a-entity>
-</a-entity>
-    
   </a-scene>
+</body>
+</html>
 
+  </a-scene>
 </body>
 </html>
